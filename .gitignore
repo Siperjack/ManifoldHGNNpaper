@@ -5,3 +5,18 @@ env/
 .venv/
 ENV/
 
+# Output files
+*.pkl
+*.h5
+*.npy
+*.npz
+*.gif
+*.png
+*.jpg
+*.jpeg
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
