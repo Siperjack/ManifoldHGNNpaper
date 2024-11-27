@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from OrientedHypergraphs.objects import (OrientedHypergraph, clique_expand, OHGraphTupleReduced, jraph_to_OH,
                            OrientedHypergraphTuple_e2v_struct, flatten_list_of_arrays,
                            generate_random_signed_incidence_Forward)
-from OrientedHypergraphs.toy_examples.example_HGs import random_S2_OH, tetrahedron, OH_rectangle, rectangle, irregular_graph
+from toy_examples.example_HGs import random_S2_OH, tetrahedron, OH_rectangle, rectangle, irregular_graph
 from morphomatics.manifold import Sphere
 from OrientedHypergraphs.operators import FLaplace, PLaplace, OH_Laplace
 from OrientedHypergraphs.utils import animate_S2_valued_OH, draw_S2_valued_OH

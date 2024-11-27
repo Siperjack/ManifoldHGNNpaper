@@ -20,3 +20,14 @@ __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+
+# Python egg metadata
+*.egg
+*.egg-info/
+*.eggs/
+.installed.cfg
+
+# Setup.py generated files
+*.egg-info/
+dist/
+build/
