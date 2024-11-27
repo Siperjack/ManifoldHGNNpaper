@@ -1,0 +1,10 @@
+setup.py
+OrientedHypergraphs/__init__.py
+OrientedHypergraphs/layers.py
+OrientedHypergraphs/objects.py
+OrientedHypergraphs/operators.py
+OrientedHypergraphs/utils.py
+OrientedHypergraphs.egg-info/PKG-INFO
+OrientedHypergraphs.egg-info/SOURCES.txt
+OrientedHypergraphs.egg-info/dependency_links.txt
+OrientedHypergraphs.egg-info/top_level.txt
