@@ -3,6 +3,20 @@ import jax.numpy as jnp
 import jraph
 import matplotlib.pyplot as plt
 
+"""wrapper for timing functions"""
+import time
+from functools import wraps
+
+def timer(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"{func.__name__} took {end_time - start_time:.4f} seconds to execute")
+        return result
+    return wrapper
+
 # import dhg as dhg
 
 from typing import Any, NamedTuple, Iterable, Mapping, Union, Optional
@@ -211,18 +225,22 @@ def OrientedHypergraph_e2v_struct(num_nodes, e2v_in, e2v_out, node_features=None
 
 
 def e2v_to_v2e(num_node, e2v_in, e2v_out):
-    v2e_in, v2e_out = [[] for i in range(num_node)], [[] for i in range(num_node)]
-    for m in range(len(e2v_in)):
-        for node in e2v_in[m]:
-            v2e_in[node].append(m)
-        for node in e2v_out[m]:
-            v2e_out[node].append(m)
-        # if m % (len(e2v_in) // 10):
-        #     print(f"e2v_to_v2e edge {m}/{len(e2v_in)} done")
-    for n in range(len(v2e_in)):
-        v2e_in[n] = jnp.array(v2e_in[n])
-        v2e_out[n] = jnp.array(v2e_out[n])
-    return v2e_in, v2e_out
+    # Pre-allocate lists with estimated sizes
+    v2e_in = [[] for _ in range(num_node)]
+    v2e_out = [[] for _ in range(num_node)]
+    
+    # Vectorized operations using list comprehension
+    for edge_idx, (in_nodes, out_nodes) in enumerate(zip(e2v_in, e2v_out)):
+        for node in in_nodes:
+            v2e_in[node].append(edge_idx)
+        for node in out_nodes:
+            v2e_out[node].append(edge_idx)
+    
+    # Batch convert to jnp arrays
+    return (
+        jnp.array([jnp.array(x) for x in v2e_in]), 
+        jnp.array([jnp.array(x) for x in v2e_out])
+    )
 
 
 def calcDegreeDiag(num_node, v2e_in, v2e_out, W):
@@ -303,37 +321,51 @@ def flatten_list_of_arrays(x2y):
 
 def calc_PLaplace_indexes_for(e2v_in, e2v_out):
     """
-    Calculates all flattened indexes for the pairwise parallel transports and other vmap operations
-    :param e2v_in: List of M arrays of edge input-sets
-    :param e2v_out: List of M arrays of edge input-sets
-    :return: List of indexes arrays
+    Calculates flattened indexes for pairwise parallel transports and vmap operations
     """
-    indexes_logs_edges_out, indexes_logs_nodes_in, indexes_logs_nodes_out = [], [], []
-    indexes_PT_edges_in, indexes_PT_nodes_in, indexes_PT_nodes_out, indexes_PT_edges_segsum = [], [], [], []
-    indexes_P_edges_in_div = []
+    print("new calc_PLaplace_indexes_for called")
+    # Pre-allocate lists with estimated sizes
+    num_edges = len(e2v_in)
+    total_in_nodes = sum(len(nodes) for nodes in e2v_in)
+    
+    # Initialize arrays with estimated sizes
+    logs_edges_out, logs_nodes_in, logs_nodes_out = [], [], []
+    PT_edges_in, PT_nodes_in, PT_nodes_out, PT_edges_segsum = [], [], [], []
+    P_edges_in_div = []
+    
     new_index = -1
     PT_index = 0
-    test = []
-    for m in range(len(e2v_in)):
-        if m == 0:
-            pass
-        else:
+    
+    # Vectorized operations using enumerate and zip
+    for m, (in_nodes, out_nodes) in enumerate(zip(e2v_in, e2v_out)):
+        if m > 0:
             PT_index += len(e2v_in[m-1])
-        for i in range(len(e2v_in[m])):
+            
+        for i, node_in in enumerate(in_nodes):
             new_index += 1
-            for j_out in range(len(e2v_out[m])):
-                indexes_logs_edges_out.append(new_index)
-                indexes_logs_nodes_in.append(int(e2v_in[m][i]))
-                indexes_logs_nodes_out.append(int(e2v_out[m][j_out]))
-            for j_in in range(len(e2v_in[m])):
-                indexes_PT_edges_segsum.append(new_index)
-                indexes_PT_edges_in.append(PT_index + j_in)
-                indexes_PT_nodes_in.append(int(e2v_in[m][j_in]))
-                indexes_PT_nodes_out.append(int(e2v_in[m][i]))
-            indexes_P_edges_in_div.append(m)
-    return [jnp.asarray(indexes_logs_edges_out), jnp.asarray(indexes_logs_nodes_in), jnp.asarray(indexes_logs_nodes_out),
-            jnp.asarray(indexes_PT_edges_in), jnp.asarray(indexes_PT_nodes_in), jnp.asarray(indexes_PT_nodes_out),
-            jnp.asarray(indexes_P_edges_in_div), jnp.asarray(indexes_PT_edges_segsum)]
+            
+            # Logs indices
+            logs_edges_out.extend([new_index] * len(out_nodes))
+            logs_nodes_in.extend([int(node_in)] * len(out_nodes))
+            logs_nodes_out.extend(map(int, out_nodes))
+            
+            # PT indices
+            PT_edges_segsum.extend([new_index] * len(in_nodes))
+            PT_edges_in.extend(range(PT_index, PT_index + len(in_nodes)))
+            PT_nodes_in.extend(map(int, in_nodes))
+            PT_nodes_out.extend([int(node_in)] * len(in_nodes))
+            
+            P_edges_in_div.append(m)
+    
+    # Batch convert to jnp arrays
+    return [
+        jnp.array(x, dtype=jnp.int32) for x in [
+            logs_edges_out, logs_nodes_in, logs_nodes_out,
+            PT_edges_in, PT_nodes_in, PT_nodes_out,
+            P_edges_in_div, PT_edges_segsum
+        ]
+    ]
+
 
 
 def e2v_to_H(n_node, e2v_in, e2v_out):
@@ -362,27 +394,38 @@ def H_to_e2v(H):
     return e_list_in, e_list_out
 
 
-# def generate_random_edges(H: dhg.Hypergraph, num_edges: int = 1):
-#     for m in range(num_edges):
-#         size = np.random.randint(2, H.num_v)
-#         h_edge = np.random.choice(np.arange(H.num_v), size=size, replace=False)
-#         H.add_hyperedges([h_edge], e_weight=None, merge_op='mean', group_name='main')
-#     return jnp.array(H)
-
-
 def generate_random_signed_incidence(num_nodes, num_edges, sym=False, print_out=False, min_tot_edge_degree=3):
+    """
+    Generate random signed incidence matrix with constraints.
+    Returns jnp.array of shape (num_nodes, num_edges) or (num_nodes, 2*num_edges) if sym=True
+    """
+    probs = np.array([0.3, 0.4, 0.3])
     vals = np.array([-1, 0, 1])
-
-    for i in range(100):
-        H = np.random.choice(vals, size=(num_nodes, num_edges), p=[0.3, 0.4, 0.3])
-        if (np.prod(np.diag(H@H.T)) != 0 and (np.abs(H).sum(axis=0) >= min_tot_edge_degree).all() and
-                ((H > 0).any(axis=0).all()) and ((H < 0).any(axis=0).all())) and ((H.T > 0).any(axis=0).all()):
+    
+    def is_valid_matrix(H):
+        diag_prod = np.prod(np.diag(H @ H.T))
+        edge_sums = np.abs(H).sum(axis=0)
+        has_pos = (H > 0).any(axis=0)
+        has_neg = (H < 0).any(axis=0)
+        
+        return (diag_prod != 0 and 
+                (edge_sums >= min_tot_edge_degree).all() and
+                has_pos.all() and 
+                has_neg.all() and 
+                (H.T > 0).any(axis=0).all())
+    
+    # Vectorized matrix generation
+    for _ in range(100):
+        H = np.random.choice(vals, size=(num_nodes, num_edges), p=probs)
+        if is_valid_matrix(H):
             if print_out:
                 print("H is valid incident")
             break
+    
+    # Symmetric case
     if sym:
         H = np.concatenate((H, -H), axis=1)
-
+    
     return jnp.array(H)
 
 
@@ -502,33 +545,40 @@ def clique_expand(OH: OrientedHypergraph, intra_connect=False):
     """
     Clique expand oriented hypergraph.
     :param OH: Oriented hypergraph class or named tuple
-    :param intra_connect: Makes cliques ouf of inputs and outputs. No functionality yet.
+    :param intra_connect: Makes cliques out of inputs and outputs. No functionality yet.
     :return:
     """
-    senders, receivers, weights = [], [], []
-    skip = False
+    from collections import defaultdict
+
+    # Use defaultdict with tuple of integers as keys
+    edge_dict = defaultdict(lambda: 0)
+    
     for m in range(OH.num_edge):
-        print(f"Edge {m}/{OH.num_edge} click expanded")
-        for n_in in range(len(OH.e2v_in[m])):
-            for n_out in range(len(OH.e2v_out[m])):
-                for send_num, i in enumerate(senders):
-                    if OH.e2v_in[m][n_in] == i:
-                        if OH.e2v_out[m][n_out] == receivers[send_num]:
-                            weights[send_num] += OH.W[m]
-                            skip = True
-
-                if skip:
-                    skip = False
-                else:
-                    senders += [OH.e2v_in[m][n_in]]
-                    receivers += [OH.e2v_out[m][n_out]]
-                    weights += [OH.W[m]]
-
-    senders, receivers, weights = np.array(senders), np.array(receivers), np.array(weights)
+        print(f"Edge {m}/{OH.num_edge} clique expanded")
+        for n_in in OH.e2v_in[m]:
+            for n_out in OH.e2v_out[m]:
+                # Convert JAX arrays to integers for dictionary keys
+                key = (int(n_in), int(n_out))
+                edge_dict[key] += float(OH.W[m])
+    
+    # Unpack the defaultdict into lists
+    senders, receivers, weights = zip(*((k[0], k[1], v) for k, v in edge_dict.items()))
+    
+    # Convert back to arrays
+    senders = np.array(senders)
+    receivers = np.array(receivers)
+    weights = np.array(weights)
+    
     print(f"Biggest edge weight is {weights.max()}")
-    return OrientedHypergraph_e2v_struct(OH.num_node, senders.reshape((len(senders), 1)),
-                                         receivers.reshape((len(receivers), 1)), node_features=OH.X,
-                                         edge_weights=weights, graph_feature=OH.globals)
+    
+    return OrientedHypergraph_e2v_struct(
+        OH.num_node, 
+        senders.reshape((len(senders), 1)),
+        receivers.reshape((len(receivers), 1)), 
+        node_features=OH.X,
+        edge_weights=weights, 
+        graph_feature=OH.globals
+    )
 
 
 if __name__ == '__main__':
