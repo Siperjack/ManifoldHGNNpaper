@@ -57,3 +57,8 @@ htmlcov/
 .uv-site-packages/
 .uv-python/
 uv.toml
+
+gifs/*
+!gifs/.gitkeep
+visualizations/*
+!visualizations/.gitkeep

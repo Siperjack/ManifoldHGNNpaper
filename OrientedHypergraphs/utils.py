@@ -7,7 +7,7 @@ from OrientedHypergraphs.objects import OrientedHypergraph
 #  import imageio
 
 
-def draw_S2_valued_OH(OH: OrientedHypergraph):
+def draw_S2_valued_OH(OH: OrientedHypergraph, file_name=None):
     """Draw set of S2-valued splines NB: not yet with hyperedges
     :param OH: Oriented hypergraph with S2-valued features.
     """
@@ -21,7 +21,9 @@ def draw_S2_valued_OH(OH: OrientedHypergraph):
         PP.add_mesh(pv.Sphere(radius=0.02, center=c), color="r")
 
     PP.show_axes()
-    PP.show()
+    PP.show(auto_close=False)
+    if file_name:
+        PP.save_graphic(file_name)
     PP.close()
 
 

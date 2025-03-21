@@ -6,11 +6,6 @@ import pickle
 import jax
 import jax.numpy as jnp
 import pyvista as pv
-
-# Add the project root to the path
-# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-
-
 from morphomatics.manifold import Sphere
 
 from OrientedHypergraphs.objects import (
@@ -32,9 +27,10 @@ from toy_examples.flow_sphere.example_HGs import (
     # tetrahedron,
 )
 
-pv.OFF_SCREEN = True
+pv.OFF_SCREEN = True  # If not running in a container, set to False
 jax.numpy.set_printoptions(precision=2)
 
+# num_node, num_edge = 5, 4
 num_node, num_edge = 15, 10
 # num_node, num_edge = 10, 15
 # num_node, num_edge = 10, 30
@@ -113,10 +109,10 @@ def laplace_print(laplace_eval, laplace_str):
     print(f"{laplace_str}-Laplace")
     print(f"0 -> {laplace_eval[0]}")
     print(f"1 -> {laplace_eval[1]}")
-    print(f"norm -> {jnp.abs(laplace_eval).sum()} \n")
+    print(f"max norm -> {jnp.sqrt((laplace_eval**2).max())} \n")
 
 
-max_iter = 50
+max_iter = 1000
 for i in range(max_iter):
 
     OH_F, lapF = update_laplace_flow(
@@ -138,11 +134,13 @@ for i in range(max_iter):
         X_P_t.append(OH_P.X)
         X_click_t.append(DG.X)
 
-print("Last print")
-
-# animate_S2_valued_OH(X_F_t, gif_name="Flow_current.gif")
-# laplace_print(lap_old, "current")
-# laplace_print(lapF, "P")
+    if (
+        jnp.sqrt((lapF**2).max()) < 1e-4
+        and jnp.sqrt((lapP**2).max()) < 1e-4
+        and jnp.sqrt((lapg**2).max()) < 1e-4
+    ):
+        print(f"All laplacians converged at {i} iterations")
+        break
 
 
 file_name = "./gifs/laplacian_timeseries"
@@ -151,18 +149,18 @@ with open(file_name, "wb") as file:
 print(f"S2 timeseries saved as {file_name}")
 
 
-animate_S2_valued_OH(X_F_t, gif_name="./gifs/Flow_F.gif")
-animate_S2_valued_OH(X_P_t, gif_name="./gifs/Flow_P.gif")
-animate_S2_valued_OH(X_click_t, gif_name="./gifs/Flow_C.gif")
+# animate_S2_valued_OH(X_F_t, gif_name="./gifs/Flow_F.gif")
+# animate_S2_valued_OH(X_P_t, gif_name="./gifs/Flow_P.gif")
+# animate_S2_valued_OH(X_click_t, gif_name="./gifs/Flow_C.gif")
 
-
-draw_S2_valued_OH(OH)
-draw_S2_valued_OH(OH_F)
-draw_S2_valued_OH(OH_P)
-draw_S2_valued_OH(DG)
+print("Drawing graphs")
+draw_S2_valued_OH(OH, file_name="./visualizations/OHinitial.pdf")
+draw_S2_valued_OH(OH_F, file_name="./visualizations/OHfinalF.pdf")
+draw_S2_valued_OH(OH_P, file_name="./visualizations/OHfinalP.pdf")
+draw_S2_valued_OH(DG, file_name="./visualizations/OHfinalg.pdf")
 laplace_print(FLaplace(OH_F, M, edge_normalize=True, deg_normalize=True), "F")
-laplace_print(FLaplace(OH_P, M, edge_normalize=True, deg_normalize=True), "P")
-laplace_print(FLaplace(DG, M, edge_normalize=True, deg_normalize=True), "g")
+laplace_print(PLaplace(OH_P, M, edge_normalize=True, deg_normalize=True), "P")
+laplace_print(PLaplace(DG, M, edge_normalize=True, deg_normalize=True), "g")  # g is the Laplacian of the clique expansion and PLaplace=FLaplace
 
 if __name__ == "__main__":
     pass
