@@ -58,4 +58,6 @@ The -e or develop flag means:
 - Changes to source code take effect immediately
 - No need to reinstall after code changes
 
+### (5). Run the toy_examples/flow_sphere/S2flow.py file for the experiments in master's thesis.
+
 Make sure your virtual environment is activated before running these commands!

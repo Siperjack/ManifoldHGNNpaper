@@ -18,7 +18,7 @@ from OrientedHypergraphs.objects import (
     # jraph_to_OH,
 )
 from OrientedHypergraphs.operators import FLaplace, OH_Laplace, PLaplace
-from OrientedHypergraphs.utils import animate_S2_valued_OH, draw_S2_valued_OH
+from OrientedHypergraphs.utils import draw_S2_valued_OH  # , animate_S2_valued_OH
 from toy_examples.flow_sphere.example_HGs import (
     # OH_rectangle,
     # irregular_graph,
