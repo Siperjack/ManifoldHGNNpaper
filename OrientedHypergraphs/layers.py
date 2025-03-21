@@ -2,16 +2,16 @@ from typing import Sequence
 
 import jax
 import jax.numpy as jnp
+from flax import linen as nn
 from jax.scipy.sparse.linalg import bicgstab
-
-
 from morphomatics.manifold import Manifold, PowerManifold
-from morphomatics.opt import RiemannianNewtonRaphson
+
 # from morphomatics.graph.operators import mfdg_laplace
 from morphomatics.nn.tangent_layers import TangentMLP
-from OrientedHypergraphs.objects import OrientedHypergraph, OHGraphTupleReduced
-from OrientedHypergraphs.operators import PLaplace, FLaplace
-from flax import linen as nn
+from morphomatics.opt import RiemannianNewtonRaphson
+
+from OrientedHypergraphs.objects import OHGraphTupleReduced, OrientedHypergraph
+from OrientedHypergraphs.operators import FLaplace, PLaplace
 
 """This file is temporarly, as the imported flax is implemended with haiku syntax"""
 
@@ -43,7 +43,9 @@ class flow_layer(nn.Module):
         self.step = self._single_euler_step
         # self.step = self._implicit_euler_step if implicit else self._single_euler_step
 
-    def _single_euler_step(self, OH: OHGraphTupleReduced, time: jnp.ndarray, delta: jnp.ndarray) -> OHGraphTupleReduced:
+    def _single_euler_step(
+        self, OH: OHGraphTupleReduced, time: jnp.ndarray, delta: jnp.ndarray
+    ) -> OHGraphTupleReduced:
         """Single step of the explicit Euler method for diffusion
 
         :param G: graph with manifold valued vectors as features; length of vector must equal the flow layer width
@@ -51,20 +53,33 @@ class flow_layer(nn.Module):
         :param delta: vector of "minimal step sizes"
         :return: updated graph
         """
+
         def _multi_laplace(channel):
             return PLaplace(OH._replace(X=channel), self.M)
 
         def _activation(feature, vector, d):
-            nrm = jnp.sqrt(self.M.metric.inner(feature, vector, vector) + jnp.finfo(jnp.float64).eps)
+            nrm = jnp.sqrt(
+                self.M.metric.inner(feature, vector, vector)
+                + jnp.finfo(jnp.float64).eps
+            )
             act = jax.nn.sigmoid(nrm - d)
-            return jax.lax.cond(nrm * act >= 1e-3,
-                                lambda a, w: a * w,
-                                lambda _, w: jnp.zeros_like(w), act, vector)
+            return jax.lax.cond(
+                nrm * act >= 1e-3,
+                lambda a, w: a * w,
+                lambda _, w: jnp.zeros_like(w),
+                act,
+                vector,
+            )
 
         v = jax.vmap(_multi_laplace, in_axes=1, out_axes=1)(OH.X)
 
         # ReLU-type activation
-        delta = jnp.stack([delta, ] * v.shape[0])
+        delta = jnp.stack(
+            [
+                delta,
+            ]
+            * v.shape[0]
+        )
         v = jax.vmap(jax.vmap(_activation))(OH.X, v, delta)
 
         v = -v * time.reshape((1, -1) + (1,) * (v.ndim - 2))

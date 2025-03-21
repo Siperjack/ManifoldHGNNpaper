@@ -1,11 +1,12 @@
-import numpy as np
 import jax.numpy as jnp
 import jraph
 import matplotlib.pyplot as plt
+import numpy as np
 
 """wrapper for timing functions"""
 import time
 from functools import wraps
+
 
 def timer(func):
     @wraps(func)
@@ -15,17 +16,22 @@ def timer(func):
         end_time = time.time()
         print(f"{func.__name__} took {end_time - start_time:.4f} seconds to execute")
         return result
+
     return wrapper
+
 
 # import dhg as dhg
 
-from typing import Any, NamedTuple, Iterable, Mapping, Union, Optional
+from typing import Any, Iterable, Mapping, NamedTuple, Optional, Union
+
 np.random.seed(49)
 
-ArrayTree = Union[jnp.ndarray, Iterable['ArrayTree'], Mapping[Any, 'ArrayTree']]
+ArrayTree = Union[jnp.ndarray, Iterable["ArrayTree"], Mapping[Any, "ArrayTree"]]
+
 
 class OHGraphTupleReduced(NamedTuple):
     """Named tuple format of the OrientedHypergraph class without incidence matrix stored"""
+
     X: Optional[ArrayTree]
     W: Optional[ArrayTree]
     e2v_in: list[jnp.ndarray]
@@ -49,8 +55,14 @@ class OHGraphTupleReduced(NamedTuple):
     PT_num_P: Optional[jnp.ndarray]
 
 
-def OrientedHypergraphTuple_e2v_struct(num_nodes, e2v_in, e2v_out, node_features=None, edge_weights=None,
-                                       graph_feature=None):
+def OrientedHypergraphTuple_e2v_struct(
+    num_nodes,
+    e2v_in,
+    e2v_out,
+    node_features=None,
+    edge_weights=None,
+    graph_feature=None,
+):
     """
     Lets you define your oriented hypergraph with edges-to-vertices, which is one-to-one with the signed incidence
     Params similar to OrientedHypergraph class member variables
@@ -59,12 +71,12 @@ def OrientedHypergraphTuple_e2v_struct(num_nodes, e2v_in, e2v_out, node_features
         node_features = jnp.ones((num_nodes, 1))  # N array of node features on Manifold
     if edge_weights is None:
         print("No weights given, default is 1")
-        edge_weights = jnp.ones(len(e2v_in))   # / num_nodes
+        edge_weights = jnp.ones(len(e2v_in))  # / num_nodes
     else:
         W = jnp.array([edge_weights]).ravel() * jnp.ones(len(e2v_in))
         edge_weights = W.reshape(len(e2v_in))  # M array of hyper edge weights
     print_progress = True
-    v2e_in, v2e_out = None, None #e2v_to_v2e(num_nodes, e2v_in, e2v_in)
+    v2e_in, v2e_out = None, None  # e2v_to_v2e(num_nodes, e2v_in, e2v_in)
     if print_progress:
         print("e2v_to_v2e done")
     D_in, D_out = calcDegreeDiag_from_e2v(num_nodes, e2v_in, e2v_out, edge_weights)
@@ -78,20 +90,45 @@ def OrientedHypergraphTuple_e2v_struct(num_nodes, e2v_in, e2v_out, node_features
     v2v_bool = calc_v2v_bool_sparse(e2v_in, e2v_out)
     if print_progress:
         print("v2v_bool done")
-    PT_start_F = jnp.array([item for item in jnp.arange(len(e2v_in)) for _ in range(len(e2v_in[item]))])
+    PT_start_F = jnp.array(
+        [item for item in jnp.arange(len(e2v_in)) for _ in range(len(e2v_in[item]))]
+    )
     PT_stop_F = flatten_list_of_arrays(e2v_in)
     PT_num_F = jnp.array([PT_start_F, PT_stop_F])
     PT_num_P = calc_PLaplace_indexes_for(e2v_in, e2v_out)
-    return OHGraphTupleReduced(X=node_features, W=edge_weights, e2v_in=e2v_in, e2v_out=e2v_out, v2e_in=v2e_in,
-                              v2e_out=v2e_out, globals=graph_feature, num_node=num_nodes, feature_dim=len(node_features[0]),
-                              num_edge=len(e2v_in), D_in=D_in, D_out=D_out, E_in=E_in, E_out=E_out,
-                              max_deg_in=jnp.max(D_in), max_deg_out=jnp.max(D_out), max_edge_deg_in=jnp.max(E_in),
-                              max_edge_deg_out=jnp.max(E_out),
-                              v2v_bool=v2v_bool, PT_num_F=PT_num_F, PT_num_P=PT_num_P)
+    return OHGraphTupleReduced(
+        X=node_features,
+        W=edge_weights,
+        e2v_in=e2v_in,
+        e2v_out=e2v_out,
+        v2e_in=v2e_in,
+        v2e_out=v2e_out,
+        globals=graph_feature,
+        num_node=num_nodes,
+        feature_dim=len(node_features[0]),
+        num_edge=len(e2v_in),
+        D_in=D_in,
+        D_out=D_out,
+        E_in=E_in,
+        E_out=E_out,
+        max_deg_in=jnp.max(D_in),
+        max_deg_out=jnp.max(D_out),
+        max_edge_deg_in=jnp.max(E_in),
+        max_edge_deg_out=jnp.max(E_out),
+        v2v_bool=v2v_bool,
+        PT_num_F=PT_num_F,
+        PT_num_P=PT_num_P,
+    )
 
 
 class OrientedHypergraph:
-    def __init__(self, incidence_matrix, node_features=None, edge_weights=None, graph_feature=None):
+    def __init__(
+        self,
+        incidence_matrix,
+        node_features=None,
+        edge_weights=None,
+        graph_feature=None,
+    ):
         self.H = incidence_matrix  # NxM incidence matrix valued {-1, 0, 1} fully determining the hypergraph topology
         if node_features is None:
             self.X = jnp.ones((len(self.H), 1))  # N array of node features on Manifold
@@ -119,17 +156,21 @@ class OrientedHypergraph:
         self.num_node = len(self.X)
         self.feature_dim = len(self.X[0])
         self.num_edge = len(self.W)
-        self.max_deg_in = ((self.H > 0).sum(axis=1).max())
-        self.max_deg_out = ((self.H < 0).sum(axis=1).max())
-        self.max_edge_deg_in = ((self.H > 0).sum(axis=0).max())
-        self.max_edge_deg_out = ((self.H < 0).sum(axis=0).max())
+        self.max_deg_in = (self.H > 0).sum(axis=1).max()
+        self.max_deg_out = (self.H < 0).sum(axis=1).max()
+        self.max_edge_deg_in = (self.H > 0).sum(axis=0).max()
+        self.max_edge_deg_out = (self.H < 0).sum(axis=0).max()
         self.D_in, self.D_out = self.calcDegreeDiag()
         self.E_in, self.E_out = self.calcEdgeSizeDiag()
         self.e2v2v = self.calc_e2v2v_bool()
         self.v2v_bool = self.calc_v2v_bool()
-        self.OHGraphTupleReduced = OrientedHypergraphTuple_e2v_struct(num_nodes=self.num_node, e2v_in=self.e2v_in,
-                                                                      e2v_out=self.e2v_out,
-                                                                      node_features=self.X, edge_weights=self.W)
+        self.OHGraphTupleReduced = OrientedHypergraphTuple_e2v_struct(
+            num_nodes=self.num_node,
+            e2v_in=self.e2v_in,
+            e2v_out=self.e2v_out,
+            node_features=self.X,
+            edge_weights=self.W,
+        )
 
     def H_to_e2v(self):
         e_list_in, e_list_out = [], []
@@ -140,8 +181,9 @@ class OrientedHypergraph:
                     edge_in.append(n)
                 elif n_node == -1:
                     edge_out.append(n)
-            assert len(edge_in + edge_out) == len(jnp.unique(jnp.array(edge_in + edge_out))), \
-                "an e_in and e_out contain a node in common, this is not allowed in this class"
+            assert len(edge_in + edge_out) == len(
+                jnp.unique(jnp.array(edge_in + edge_out))
+            ), "an e_in and e_out contain a node in common, this is not allowed in this class"
             e_list_in.append(jnp.array(edge_in))
             e_list_out.append(jnp.array(edge_out))
         return e_list_in, e_list_out
@@ -205,11 +247,22 @@ class OrientedHypergraph:
         return jnp.array(triplets)
 
     def _replace(self, **kwargs):
-        return OrientedHypergraph(kwargs.get('H', self.H), kwargs.get('X', self.X),
-                                  kwargs.get('W', self.W), kwargs.get('globals', self.globals))
+        return OrientedHypergraph(
+            kwargs.get("H", self.H),
+            kwargs.get("X", self.X),
+            kwargs.get("W", self.W),
+            kwargs.get("globals", self.globals),
+        )
 
 
-def OrientedHypergraph_e2v_struct(num_nodes, e2v_in, e2v_out, node_features=None, edge_weights=None, graph_feature=None):
+def OrientedHypergraph_e2v_struct(
+    num_nodes,
+    e2v_in,
+    e2v_out,
+    node_features=None,
+    edge_weights=None,
+    graph_feature=None,
+):
     """
     Lets you define your oriented hypergraph with edges-to-vertices, which is one-to-one with the signed incidence
     :param num_nodes:
@@ -220,26 +273,30 @@ def OrientedHypergraph_e2v_struct(num_nodes, e2v_in, e2v_out, node_features=None
     :param graph_feature:
     :return:
     """
-    return OrientedHypergraph(e2v_to_H(num_nodes, e2v_in, e2v_out), node_features=node_features,
-                              edge_weights=edge_weights, graph_feature=graph_feature)
+    return OrientedHypergraph(
+        e2v_to_H(num_nodes, e2v_in, e2v_out),
+        node_features=node_features,
+        edge_weights=edge_weights,
+        graph_feature=graph_feature,
+    )
 
 
 def e2v_to_v2e(num_node, e2v_in, e2v_out):
     # Pre-allocate lists with estimated sizes
     v2e_in = [[] for _ in range(num_node)]
     v2e_out = [[] for _ in range(num_node)]
-    
+
     # Vectorized operations using list comprehension
     for edge_idx, (in_nodes, out_nodes) in enumerate(zip(e2v_in, e2v_out)):
         for node in in_nodes:
             v2e_in[node].append(edge_idx)
         for node in out_nodes:
             v2e_out[node].append(edge_idx)
-    
+
     # Batch convert to jnp arrays
     return (
-        jnp.array([jnp.array(x) for x in v2e_in]), 
-        jnp.array([jnp.array(x) for x in v2e_out])
+        jnp.array([jnp.array(x) for x in v2e_in]),
+        jnp.array([jnp.array(x) for x in v2e_out]),
     )
 
 
@@ -327,45 +384,50 @@ def calc_PLaplace_indexes_for(e2v_in, e2v_out):
     # Pre-allocate lists with estimated sizes
     num_edges = len(e2v_in)
     total_in_nodes = sum(len(nodes) for nodes in e2v_in)
-    
+
     # Initialize arrays with estimated sizes
     logs_edges_out, logs_nodes_in, logs_nodes_out = [], [], []
     PT_edges_in, PT_nodes_in, PT_nodes_out, PT_edges_segsum = [], [], [], []
     P_edges_in_div = []
-    
+
     new_index = -1
     PT_index = 0
-    
+
     # Vectorized operations using enumerate and zip
     for m, (in_nodes, out_nodes) in enumerate(zip(e2v_in, e2v_out)):
         if m > 0:
-            PT_index += len(e2v_in[m-1])
-            
+            PT_index += len(e2v_in[m - 1])
+
         for i, node_in in enumerate(in_nodes):
             new_index += 1
-            
+
             # Logs indices
             logs_edges_out.extend([new_index] * len(out_nodes))
             logs_nodes_in.extend([int(node_in)] * len(out_nodes))
             logs_nodes_out.extend(map(int, out_nodes))
-            
+
             # PT indices
             PT_edges_segsum.extend([new_index] * len(in_nodes))
             PT_edges_in.extend(range(PT_index, PT_index + len(in_nodes)))
             PT_nodes_in.extend(map(int, in_nodes))
             PT_nodes_out.extend([int(node_in)] * len(in_nodes))
-            
+
             P_edges_in_div.append(m)
-    
+
     # Batch convert to jnp arrays
     return [
-        jnp.array(x, dtype=jnp.int32) for x in [
-            logs_edges_out, logs_nodes_in, logs_nodes_out,
-            PT_edges_in, PT_nodes_in, PT_nodes_out,
-            P_edges_in_div, PT_edges_segsum
+        jnp.array(x, dtype=jnp.int32)
+        for x in [
+            logs_edges_out,
+            logs_nodes_in,
+            logs_nodes_out,
+            PT_edges_in,
+            PT_nodes_in,
+            PT_nodes_out,
+            P_edges_in_div,
+            PT_edges_segsum,
         ]
     ]
-
 
 
 def e2v_to_H(n_node, e2v_in, e2v_out):
@@ -394,26 +456,30 @@ def H_to_e2v(H):
     return e_list_in, e_list_out
 
 
-def generate_random_signed_incidence(num_nodes, num_edges, sym=False, print_out=False, min_tot_edge_degree=3):
+def generate_random_signed_incidence(
+    num_nodes, num_edges, sym=False, print_out=False, min_tot_edge_degree=3
+):
     """
     Generate random signed incidence matrix with constraints.
     Returns jnp.array of shape (num_nodes, num_edges) or (num_nodes, 2*num_edges) if sym=True
     """
     probs = np.array([0.3, 0.4, 0.3])
     vals = np.array([-1, 0, 1])
-    
+
     def is_valid_matrix(H):
         diag_prod = np.prod(np.diag(H @ H.T))
         edge_sums = np.abs(H).sum(axis=0)
         has_pos = (H > 0).any(axis=0)
         has_neg = (H < 0).any(axis=0)
-        
-        return (diag_prod != 0 and 
-                (edge_sums >= min_tot_edge_degree).all() and
-                has_pos.all() and 
-                has_neg.all() and 
-                (H.T > 0).any(axis=0).all())
-    
+
+        return (
+            diag_prod != 0
+            and (edge_sums >= min_tot_edge_degree).all()
+            and has_pos.all()
+            and has_neg.all()
+            and (H.T > 0).any(axis=0).all()
+        )
+
     # Vectorized matrix generation
     for _ in range(100):
         H = np.random.choice(vals, size=(num_nodes, num_edges), p=probs)
@@ -421,23 +487,29 @@ def generate_random_signed_incidence(num_nodes, num_edges, sym=False, print_out=
             if print_out:
                 print("H is valid incident")
             break
-    
+
     # Symmetric case
     if sym:
         H = np.concatenate((H, -H), axis=1)
-    
+
     return jnp.array(H)
 
 
-def generate_random_signed_incidence_Forward(num_nodes, num_edges, print_out=False, min_tot_edge_degree=2):
+def generate_random_signed_incidence_Forward(
+    num_nodes, num_edges, print_out=False, min_tot_edge_degree=2
+):
     vals = np.array([0, -1])
     for i in range(1000):
         H = np.random.choice(vals, size=(num_nodes, num_edges), p=[0.6, 0.4])
         input = np.random.randint(0, num_nodes, size=(num_edges))
         for j in range(num_edges):
             H[input[j], j] = 1
-        if (np.prod(np.diag(H@H.T)) != 0 and (np.abs(H).sum(axis=0) >= min_tot_edge_degree).all() and
-                ((H > 0).any(axis=0).all()) and ((H < 0).any(axis=0).all())) and ((H.T > 0).any(axis=0).all()):
+        if (
+            np.prod(np.diag(H @ H.T)) != 0
+            and (np.abs(H).sum(axis=0) >= min_tot_edge_degree).all()
+            and ((H > 0).any(axis=0).all())
+            and ((H < 0).any(axis=0).all())
+        ) and ((H.T > 0).any(axis=0).all()):
             if print_out:
                 print("H is valid incident")
             break
@@ -449,8 +521,12 @@ def generate_random_symmetric_signed_incidence(num_nodes, num_edges):
     vals = np.array([-1, 0, 1])
     H = np.random.choice(vals, size=(num_nodes, num_edges), p=[0.2, 0.6, 0.2])
     for i in range(100):
-        if (np.prod(np.diag(H@H.T)) != 0 and (np.abs(H).sum(axis=0) >= 2).all() and
-                ((H > 0).any(axis=0).all()) and ((H < 0).any(axis=0).all())):
+        if (
+            np.prod(np.diag(H @ H.T)) != 0
+            and (np.abs(H).sum(axis=0) >= 2).all()
+            and ((H > 0).any(axis=0).all())
+            and ((H < 0).any(axis=0).all())
+        ):
             print("H is valid incident")
             break
         H = np.random.choice(vals, size=(num_nodes, num_edges), p=[0.2, 0.6, 0.2])
@@ -475,7 +551,7 @@ def orient_hypergraph_one_to_all(e2v):
             if n == len(edge) - 1:
                 e2v_out.append(edge[0:n])
             else:
-                e2v_out.append(edge[0:n] + edge[n+1:])
+                e2v_out.append(edge[0:n] + edge[n + 1 :])
     return e2v_in, e2v_out
 
 
@@ -498,24 +574,24 @@ def OHtuple_to_jraph_edgeless(OH: OHGraphTupleReduced, keep_edges=False):
     """
     if keep_edges:
         graph = jraph.GraphsTuple(
-          nodes=OH.X,
-          edges=OH.W,
-          senders=jnp.array(OH.e2v_in).reshape(len(OH.e2v_in)),
-          receivers=jnp.array(OH.e2v_out).reshape(len(OH.e2v_out)),
-          n_node=jnp.asarray(OH.num_node)[None],
-          n_edge=jnp.asarray(OH.num_edge)[None],
-          globals=OH.globals
-          )
+            nodes=OH.X,
+            edges=OH.W,
+            senders=jnp.array(OH.e2v_in).reshape(len(OH.e2v_in)),
+            receivers=jnp.array(OH.e2v_out).reshape(len(OH.e2v_out)),
+            n_node=jnp.asarray(OH.num_node)[None],
+            n_edge=jnp.asarray(OH.num_edge)[None],
+            globals=OH.globals,
+        )
     else:
         graph = jraph.GraphsTuple(
-          nodes=OH.X,
-          edges=OH.W,
-          senders=jnp.array([]),
-          receivers=jnp.array([]),
-          n_node=jnp.asarray(OH.num_node)[None],
-          n_edge=jnp.asarray(OH.num_edge)[None],
-          globals=OH.globals
-          )
+            nodes=OH.X,
+            edges=OH.W,
+            senders=jnp.array([]),
+            receivers=jnp.array([]),
+            n_node=jnp.asarray(OH.num_node)[None],
+            n_edge=jnp.asarray(OH.num_edge)[None],
+            globals=OH.globals,
+        )
     return graph
 
 
@@ -536,9 +612,14 @@ def OHtuple_to_jraph_edgeless(OH: OHGraphTupleReduced, keep_edges=False):
 
 
 def jraph_to_OH(graph: jraph.GraphsTuple):
-    return OrientedHypergraph_e2v_struct(len(graph.nodes), graph.senders.reshape((len(graph.senders), 1)),
-                                         graph.receivers.reshape((len(graph.receivers), 1)), node_features=graph.nodes,
-                                         edge_weights=graph.edges, graph_feature=graph.globals)
+    return OrientedHypergraph_e2v_struct(
+        len(graph.nodes),
+        graph.senders.reshape((len(graph.senders), 1)),
+        graph.receivers.reshape((len(graph.receivers), 1)),
+        node_features=graph.nodes,
+        edge_weights=graph.edges,
+        graph_feature=graph.globals,
+    )
 
 
 def clique_expand(OH: OrientedHypergraph, intra_connect=False):
@@ -552,7 +633,7 @@ def clique_expand(OH: OrientedHypergraph, intra_connect=False):
 
     # Use defaultdict with tuple of integers as keys
     edge_dict = defaultdict(lambda: 0)
-    
+
     for m in range(OH.num_edge):
         print(f"Edge {m}/{OH.num_edge} clique expanded")
         for n_in in OH.e2v_in[m]:
@@ -560,39 +641,37 @@ def clique_expand(OH: OrientedHypergraph, intra_connect=False):
                 # Convert JAX arrays to integers for dictionary keys
                 key = (int(n_in), int(n_out))
                 edge_dict[key] += float(OH.W[m])
-    
+
     # Unpack the defaultdict into lists
     senders, receivers, weights = zip(*((k[0], k[1], v) for k, v in edge_dict.items()))
-    
+
     # Convert back to arrays
     senders = np.array(senders)
     receivers = np.array(receivers)
     weights = np.array(weights)
-    
+
     print(f"Biggest edge weight is {weights.max()}")
-    
+
     return OrientedHypergraph_e2v_struct(
-        OH.num_node, 
+        OH.num_node,
         senders.reshape((len(senders), 1)),
-        receivers.reshape((len(receivers), 1)), 
+        receivers.reshape((len(receivers), 1)),
         node_features=OH.X,
-        edge_weights=weights, 
-        graph_feature=OH.globals
+        edge_weights=weights,
+        graph_feature=OH.globals,
     )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     N = 6
     M = 3
 
     # OH1 = OrientedHypergraph(generate_random_signed_incidence(N, M))
-    OH1 = OrientedHypergraph(generate_random_signed_incidence(N, M), edge_weights=1/N)
+    OH1 = OrientedHypergraph(generate_random_signed_incidence(N, M), edge_weights=1 / N)
     # dhg1 = OH_to_dhg(OH1)
     # OH_1_to_all = dhg_to_OH(dhg1, random=False)
     # draw_OH_as_dhg(OH_1_to_all)
-    OH_red_tuple = OrientedHypergraphTuple_e2v_struct(OH1.num_node, OH1.e2v_in, OH1.e2v_out)
+    OH_red_tuple = OrientedHypergraphTuple_e2v_struct(
+        OH1.num_node, OH1.e2v_in, OH1.e2v_out
+    )
     pass
-
-
-
-

@@ -10,15 +10,13 @@
 #                                                                              #
 ################################################################################
 
-from typing import NamedTuple, Dict
+from functools import partial
+from typing import Dict, NamedTuple
 
+import flax.linen as nn
 import jax.numpy as jnp
 import jax.ops
-
-from functools import partial
-
 import jraph
-import flax.linen as nn
 import optax
 
 
@@ -28,13 +26,14 @@ class TrainingState(NamedTuple):
     opt_state: optax.OptState
 
 
-def weighted_cross_entropy_loss(params: Dict,
-                                graph: jraph.GraphsTuple,
-                                label: jnp.ndarray,
-                                network: nn.Module,
-                                mask: jnp.array,
-                                weights: jnp.array = None
-                                ) -> jnp.ndarray:
+def weighted_cross_entropy_loss(
+    params: Dict,
+    graph: jraph.GraphsTuple,
+    label: jnp.ndarray,
+    network: nn.Module,
+    mask: jnp.array,
+    weights: jnp.array = None,
+) -> jnp.ndarray:
     """Weighted cross-entropy classification loss
 
     :param params: network parameters
@@ -62,17 +61,20 @@ def weighted_cross_entropy_loss(params: Dict,
 
     terms = weights[None] * one_hot * jax.nn.log_softmax(logits)
     # log_likelihood = jax.ops.segment_sum(-terms.sum(axis=1), mask.astype(jnp.int32), num_segments=2)[1]
-    log_likelihood = jax.lax.select(mask, -terms.sum(axis=1), jnp.zeros_like(mask, dtype=float)).sum()
+    log_likelihood = jax.lax.select(
+        mask, -terms.sum(axis=1), jnp.zeros_like(mask, dtype=float)
+    ).sum()
     return log_likelihood / jnp.sum(mask)  # + 1e-4 * l2_regularizer
 
 
-@partial(jax.jit, static_argnames=['num_classes'])
-def confusion_matrix(predictions: jnp.array,
-                     results: jnp.array,
-                     num_classes: int,
-                     labels: jnp.array,
-                     mask: jnp.array
-                     ) -> jnp.array:
+@partial(jax.jit, static_argnames=["num_classes"])
+def confusion_matrix(
+    predictions: jnp.array,
+    results: jnp.array,
+    num_classes: int,
+    labels: jnp.array,
+    mask: jnp.array,
+) -> jnp.array:
     """Encodes true positives (TP), false positives (FP), and false negatives (FN) of a multi-class classification in a
     matrix
 
@@ -105,13 +107,16 @@ def confusion_matrix(predictions: jnp.array,
     return jnp.sum(B, axis=0)
 
 
-@partial(jax.jit, static_argnames=['num_classes', 'network'])
-def evaluate(params: Dict,
-             graph: jraph.GraphsTuple,
-             labels: jnp.ndarray,
-             num_classes: int,
-             network: nn.Module,
-             rn_key: jax.random.PRNGKey, mask: jnp.ndarray) -> jnp.ndarray:
+@partial(jax.jit, static_argnames=["num_classes", "network"])
+def evaluate(
+    params: Dict,
+    graph: jraph.GraphsTuple,
+    labels: jnp.ndarray,
+    num_classes: int,
+    network: nn.Module,
+    rn_key: jax.random.PRNGKey,
+    mask: jnp.ndarray,
+) -> jnp.ndarray:
     """Evaluation metric: classification accuracy
 
     :param params: network parameters
@@ -131,14 +136,15 @@ def evaluate(params: Dict,
     return acc
 
 
-@partial(jax.jit, static_argnames=['num_classes', 'network'])
-def evaluate_F1(params: Dict,
-                graph: jraph.GraphsTuple,
-                labels: jnp.ndarray,
-                num_classes: int,
-                network: nn.Module,
-                mask: jnp.ndarray
-                ) -> jnp.ndarray:
+@partial(jax.jit, static_argnames=["num_classes", "network"])
+def evaluate_F1(
+    params: Dict,
+    graph: jraph.GraphsTuple,
+    labels: jnp.ndarray,
+    num_classes: int,
+    network: nn.Module,
+    mask: jnp.ndarray,
+) -> jnp.ndarray:
     """Evaluation metric: F1 score for classification
 
     :param params: network parameters
@@ -153,7 +159,9 @@ def evaluate_F1(params: Dict,
     logits = network.apply(params, graph)
     predictions = jnp.argmax(logits, axis=-1)
 
-    C = confusion_matrix(predictions, (predictions == labels), num_classes, labels, mask)
+    C = confusion_matrix(
+        predictions, (predictions == labels), num_classes, labels, mask
+    )
 
     # jax.debug.print('confusion_matrix: {}', C)
 
@@ -166,16 +174,17 @@ def evaluate_F1(params: Dict,
     return f1_macro(C)
 
 
-@partial(jax.jit, static_argnames=['optimizer', 'network', 'verbosity'])
-def update(state: TrainingState,
-           graph: jraph.GraphsTuple,
-           label: jnp.ndarray,
-           optimizer: optax.GradientTransformation,
-           network: nn.Module,
-           mask: jnp.ndarray,
-           weights: jnp.ndarray = None,
-           verbosity: int = 0
-           ) -> TrainingState:
+@partial(jax.jit, static_argnames=["optimizer", "network", "verbosity"])
+def update(
+    state: TrainingState,
+    graph: jraph.GraphsTuple,
+    label: jnp.ndarray,
+    optimizer: optax.GradientTransformation,
+    network: nn.Module,
+    mask: jnp.ndarray,
+    weights: jnp.ndarray = None,
+    verbosity: int = 0,
+) -> TrainingState:
     """Learning rule (stochastic gradient descent)
 
     :param state: current training state
@@ -188,13 +197,18 @@ def update(state: TrainingState,
     :param verbosity: verbosity level between 0 and 2
     :return: updated training state
     """
-    value, grads = jax.value_and_grad(weighted_cross_entropy_loss)(state.params, graph, label, network, mask, weights)
+    value, grads = jax.value_and_grad(weighted_cross_entropy_loss)(
+        state.params, graph, label, network, mask, weights
+    )
     updates, opt_state = optimizer.update(grads, state.opt_state, state.params)
 
     if verbosity > 0:
-        jax.debug.print('value: {}', value)
+        jax.debug.print("value: {}", value)
     if verbosity > 1:
-        jax.debug.print("||grads_i||_inf: {}", jax.tree_util.tree_map(lambda a: jnp.max(jnp.abs(a)), grads))
+        jax.debug.print(
+            "||grads_i||_inf: {}",
+            jax.tree_util.tree_map(lambda a: jnp.max(jnp.abs(a)), grads),
+        )
 
     params = optax.apply_updates(state.params, updates)
     # Compute avg_params, the exponential moving average of the "live" params.

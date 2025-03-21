@@ -1,17 +1,30 @@
 import jax.numpy as jnp
 import jraph
 import numpy as np
-from OrientedHypergraphs.objects import OrientedHypergraph, OrientedHypergraph_e2v_struct, generate_random_signed_incidence, \
-    OrientedHypergraphTuple_e2v_struct, orient_hypergraph_one_to_all, \
-    generate_random_signed_incidence_Forward, H_to_e2v, e2v_to_H
 
+from OrientedHypergraphs.objects import (
+    H_to_e2v,
+    OrientedHypergraph,
+    OrientedHypergraph_e2v_struct,
+    OrientedHypergraphTuple_e2v_struct,
+    e2v_to_H,
+    generate_random_signed_incidence,
+    generate_random_signed_incidence_Forward,
+    orient_hypergraph_one_to_all,
+)
 
 
 def OH_rectangle(homogeneous_edge_weights=True) -> OrientedHypergraph:
     """Define a four node graph, each node has a feature on the 2-sphere."""
 
     node_features = jnp.array(
-        [[0., 0., 1.], [0., 1., 0.], [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)], [1., 0., 0.]])
+        [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)],
+            [1.0, 0.0, 0.0],
+        ]
+    )
 
     # senders = jnp.array([0, 1, 2, 3])
     # receivers = jnp.array([1, 2, 3, 0])
@@ -26,10 +39,12 @@ def OH_rectangle(homogeneous_edge_weights=True) -> OrientedHypergraph:
     n_edge = len(senders)
 
     if homogeneous_edge_weights:
-        edges = jnp.array([[.25] * int(n_edge)]).T
+        edges = jnp.array([[0.25] * int(n_edge)]).T
     else:
-        edges = jnp.array([[.125], [.125], [.15], [.6]])
-    OH = OrientedHypergraph_e2v_struct(n_node, senders, receivers, node_features=node_features, edge_weights=edges)
+        edges = jnp.array([[0.125], [0.125], [0.15], [0.6]])
+    OH = OrientedHypergraph_e2v_struct(
+        n_node, senders, receivers, node_features=node_features, edge_weights=edges
+    )
     return OH
 
 
@@ -37,7 +52,13 @@ def OH_coinciding_mean(homogeneous_edge_weights=True) -> OrientedHypergraph:
     """Define a four node graph, each node has a feature on the 2-sphere."""
 
     node_features = jnp.array(
-        [[0., 0., 1.], [0., 1., 0.], [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)], [1., 0., 0.]])
+        [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)],
+            [1.0, 0.0, 0.0],
+        ]
+    )
 
     # senders = jnp.array([0, 1, 2, 3])
     # receivers = jnp.array([1, 2, 3, 0])
@@ -52,10 +73,12 @@ def OH_coinciding_mean(homogeneous_edge_weights=True) -> OrientedHypergraph:
     n_edge = len(senders)
 
     if homogeneous_edge_weights:
-        edges = jnp.array([[.25] * int(n_edge)]).T
+        edges = jnp.array([[0.25] * int(n_edge)]).T
     else:
-        edges = jnp.array([[.125], [.125], [.15], [.6]])
-    OH = OrientedHypergraph_e2v_struct(n_node, senders, receivers, node_features=node_features, edge_weights=edges)
+        edges = jnp.array([[0.125], [0.125], [0.15], [0.6]])
+    OH = OrientedHypergraph_e2v_struct(
+        n_node, senders, receivers, node_features=node_features, edge_weights=edges
+    )
     return OH
 
 
@@ -63,7 +86,13 @@ def rectangle(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
     """Define a four node graph, each node has a feature on the 2-sphere."""
 
     node_features = jnp.array(
-        [[0., 0., 1.], [0., 1., 0.], [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)], [1., 0., 0.]])
+        [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [1 / jnp.sqrt(3), 1 / jnp.sqrt(3), -1 / jnp.sqrt(3)],
+            [1.0, 0.0, 0.0],
+        ]
+    )
 
     # senders = jnp.array([0, 1, 2, 3])
     # receivers = jnp.array([1, 2, 3, 0])
@@ -75,9 +104,11 @@ def rectangle(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
     n_edge = jnp.array([len(senders)])
 
     if homogeneous_edge_weights:
-        edges = jnp.array([[.25] * int(n_edge[0])]).T
+        edges = jnp.array([[0.25] * int(n_edge[0])]).T
     else:
-        edges = jnp.array([[.125], [.125], [.15], [.6], [.15], [.125], [.125], [.6]])
+        edges = jnp.array(
+            [[0.125], [0.125], [0.15], [0.6], [0.15], [0.125], [0.125], [0.6]]
+        )
 
     global_context = None
     graph = jraph.GraphsTuple(
@@ -87,7 +118,7 @@ def rectangle(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
         receivers=receivers,
         n_node=n_node,
         n_edge=n_edge,
-        globals=global_context
+        globals=global_context,
     )
     return graph
 
@@ -95,15 +126,26 @@ def rectangle(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
 def irregular_graph(homogeneous_edge_weights=False) -> jraph.GraphsTuple:
     """Define a four node graph, each node has a feature on the 2-sphere."""
 
-    node_features = jnp.array([[0., 0., 1.], [0., 1., 0.], [0., 1 / jnp.sqrt(2), 1 / jnp.sqrt(2)], [1., 0., 0.]])
+    node_features = jnp.array(
+        [
+            [0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0],
+            [0.0, 1 / jnp.sqrt(2), 1 / jnp.sqrt(2)],
+            [1.0, 0.0, 0.0],
+        ]
+    )
 
     senders = jnp.array([0, 2, 3, 2, 1, 0, 0, 3])
     receivers = jnp.array([1, 0, 0, 3, 0, 2, 3, 2])
 
     if homogeneous_edge_weights:
-        edges = jnp.array([[.25], [.25], [.25], [.25], [.25], [.25], [.25], [.25]])
+        edges = jnp.array(
+            [[0.25], [0.25], [0.25], [0.25], [0.25], [0.25], [0.25], [0.25]]
+        )
     else:
-        edges = jnp.array([[.125], [.125], [.15], [.6], [.125], [.125], [.15], [.6]])
+        edges = jnp.array(
+            [[0.125], [0.125], [0.15], [0.6], [0.125], [0.125], [0.15], [0.6]]
+        )
 
     n_node = jnp.array([len(node_features)])
     n_edge = jnp.array([len(senders)])
@@ -116,7 +158,7 @@ def irregular_graph(homogeneous_edge_weights=False) -> jraph.GraphsTuple:
         receivers=receivers,
         n_node=n_node,
         n_edge=n_edge,
-        globals=global_context
+        globals=global_context,
     )
     return graph
 
@@ -124,8 +166,14 @@ def irregular_graph(homogeneous_edge_weights=False) -> jraph.GraphsTuple:
 def tetrahedron(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
     """Define a tetrahedron graph on the 2-sphere."""
 
-    node_features = jnp.array([[0., 0., 1.], [jnp.sqrt(8 / 9), 0., -1 / 3], [-jnp.sqrt(2 / 9), jnp.sqrt(2 / 3), -1 / 3],
-                               [-jnp.sqrt(2 / 9), -jnp.sqrt(2 / 3), -1 / 3]])
+    node_features = jnp.array(
+        [
+            [0.0, 0.0, 1.0],
+            [jnp.sqrt(8 / 9), 0.0, -1 / 3],
+            [-jnp.sqrt(2 / 9), jnp.sqrt(2 / 3), -1 / 3],
+            [-jnp.sqrt(2 / 9), -jnp.sqrt(2 / 3), -1 / 3],
+        ]
+    )
 
     # senders = jnp.array([0, 1, 2, 3])
     # receivers = jnp.array([1, 2, 3, 0])
@@ -139,7 +187,22 @@ def tetrahedron(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
     if homogeneous_edge_weights:
         edges = jnp.atleast_2d(jnp.repeat(1 / n_node, int(n_edge[0]))).T
     else:
-        edges = jnp.array([[.125], [.125], [.15], [.6], [.15], [.15], [.15], [.15], [.15], [.15], [.15], [.15]])
+        edges = jnp.array(
+            [
+                [0.125],
+                [0.125],
+                [0.15],
+                [0.6],
+                [0.15],
+                [0.15],
+                [0.15],
+                [0.15],
+                [0.15],
+                [0.15],
+                [0.15],
+                [0.15],
+            ]
+        )
 
     global_context = None
     graph = jraph.GraphsTuple(
@@ -149,21 +212,34 @@ def tetrahedron(homogeneous_edge_weights=True) -> jraph.GraphsTuple:
         receivers=receivers,
         n_node=n_node,
         n_edge=n_edge,
-        globals=global_context
+        globals=global_context,
     )
     return graph
 
 
 def random_feature(n_node, gaussian=False, sd=1):
-    if gaussian:   # Better distribution around a point on the sphere would be sampling in tangent space and use exp
-        random_R3 = np.random.normal(loc=jnp.ones((n_node, 3)), size=(n_node, 3), scale=sd)
+    if (
+        gaussian
+    ):  # Better distribution around a point on the sphere would be sampling in tangent space and use exp
+        random_R3 = np.random.normal(
+            loc=jnp.ones((n_node, 3)), size=(n_node, 3), scale=sd
+        )
     else:
         random_R3 = np.random.uniform(low=-1, high=1, size=(n_node, 3))
     return random_R3 / np.linalg.norm(random_R3, axis=1).reshape(n_node, 1)
 
 
-def random_S2_OH(N, M, naive_normalize_deg=False, same_oct=False, scale=1, forward=False, backward=False, sym=True,
-                 min_tot_edge_degree=2):
+def random_S2_OH(
+    N,
+    M,
+    naive_normalize_deg=False,
+    same_oct=False,
+    scale=1,
+    forward=False,
+    backward=False,
+    sym=True,
+    min_tot_edge_degree=2,
+):
     """
     Makes a OrientedHypergraph class object embedded on the sphere according to the parameters
     :param N: #nodes
@@ -180,22 +256,25 @@ def random_S2_OH(N, M, naive_normalize_deg=False, same_oct=False, scale=1, forwa
     random_R3 = jnp.array(random_feature(N, sd=scale))
     if same_oct:
         random_R3 = jnp.abs(random_R3)
-    random_H = generate_random_signed_incidence(N, M, sym=sym, min_tot_edge_degree=min_tot_edge_degree)
+    random_H = generate_random_signed_incidence(
+        N, M, sym=sym, min_tot_edge_degree=min_tot_edge_degree
+    )
     if forward:
         if sym:
             e2v, _ = H_to_e2v(np.abs(random_H))
             e2v_in, e2v_out = orient_hypergraph_one_to_all(e2v)
             random_H = e2v_to_H(N, e2v_in, e2v_out)
         else:
-            random_H = generate_random_signed_incidence_Forward(N, M, min_tot_edge_degree=min_tot_edge_degree)
+            random_H = generate_random_signed_incidence_Forward(
+                N, M, min_tot_edge_degree=min_tot_edge_degree
+            )
         if backward:
-            random_H = random_H*-1
+            random_H = random_H * -1
     OH = OrientedHypergraph(random_H, node_features=random_R3)
     if naive_normalize_deg:
         OH.W = OH.W / OH.max_deg_in
         return OrientedHypergraph(random_H, node_features=random_R3, edge_weights=OH.W)
     return OH
-
 
 
 def dhg_converter(dhg_data):
@@ -204,8 +283,9 @@ def dhg_converter(dhg_data):
     edge_list = dhg_data.edge_list
     e2v_in, e2v_out = orient_hypergraph_one_to_all(edge_list)
     X = dhg_data.features
-    OH = OrientedHypergraphTuple_e2v_struct(num_nodes=num_nodes, e2v_in=e2v_in, e2v_out=e2v_out,
-                                            node_features=X)
+    OH = OrientedHypergraphTuple_e2v_struct(
+        num_nodes=num_nodes, e2v_in=e2v_in, e2v_out=e2v_out, node_features=X
+    )
     return OH, num_classes
 
 
