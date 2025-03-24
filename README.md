@@ -61,3 +61,10 @@ The -e or develop flag means:
 ### (5). Run the toy_examples/flow_sphere/S2flow.py file for the experiments in master's thesis.
 
 Make sure your virtual environment is activated before running these commands!
+
+### Alternative: Run in devcontainer with everythinng set up and run when ready. 
+NB: This option often doesn't render gifs, and therefore lines creating gifs are commented out.
+
+## HGNN paper:
+
+Run toy_examples/flow_sphere/S2flow.py with different different parameters of the random_S2_OH(args) function.
