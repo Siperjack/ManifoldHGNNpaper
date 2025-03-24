@@ -1,0 +1,79 @@
+[project]
+name = "manifoldhgnnpaper"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "absl-py==2.1.0",
+    "black>=25.1.0",
+    "certifi==2024.8.30",
+    "charset-normalizer==3.4.0",
+    "chex==0.1.87",
+    "contourpy==1.3.1",
+    "cycler==0.12.1",
+    "etils==1.10.0",
+    "flake8>=7.1.2",
+    "flax==0.10.2",
+    "fonttools==4.55.0",
+    "fsspec==2024.10.0",
+    "humanize==4.11.0",
+    "idna==3.10",
+    "importlib-resources==6.4.5",
+    "isort>=6.0.1",
+    "jax==0.4.35",
+    "jaxlib==0.4.35",
+    "jraph==0.0.6.dev0",
+    "kiwisolver==1.4.7",
+    "markdown-it-py==3.0.0",
+    "matplotlib==3.9.2",
+    "mdurl==0.1.2",
+    "ml-dtypes==0.5.0",
+    "morphomatics",
+    "msgpack==1.1.0",
+    "nest-asyncio==1.6.0",
+    "numpy==2.1.3",
+    "opt-einsum==3.4.0",
+    "optax==0.2.4",
+    "orbax-checkpoint==0.10.1",
+    "packaging==24.2",
+    "pillow==11.0.0",
+    "platformdirs==4.3.6",
+    "pooch==1.8.2",
+    "protobuf==5.28.3",
+    "pygments==2.18.0",
+    "pyparsing==3.2.0",
+    "python-dateutil==2.9.0.post0",
+    "pyvista==0.44.2",
+    "pyyaml==6.0.2",
+    "requests==2.32.3",
+    "rich==13.9.4",
+    "scipy==1.14.1",
+    "scooby==0.10.0",
+    "simplejson==3.19.3",
+    "six==1.16.0",
+    "tensorstore==0.1.69",
+    "toolz==1.0.0",
+    "typing-extensions==4.12.2",
+    "urllib3==2.2.3",
+    "vtk==9.3.1",
+    "zipp==3.21.0",
+]
+
+[tool.uv.sources]
+morphomatics = { git = "https://github.com/morphomatics/morphomatics.git", rev = "480f87ec7bf3280672cd7449860c101885dba3bc" }
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+# A regex preceded with ^/ will apply only to files and directories
+# in the root of the project.
+^/docs
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+line_length = 88

@@ -31,3 +31,34 @@ __pycache__/
 *.egg-info/
 dist/
 build/
+
+flak
+
+# Linter and formatter configuration files and caches
+.flake8
+.black
+.isort.cfg
+.mypy_cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Coverage reports
+.coverage
+htmlcov/
+
+# uv related files and directories
+.uv/
+.venv/
+.venv.uv/
+.uv-cache/
+.uv-lock/
+.uv-site-packages/
+.uv-python/
+uv.toml
+
+gifs/*
+!gifs/.gitkeep
+visualizations/*
+!visualizations/.gitkeep

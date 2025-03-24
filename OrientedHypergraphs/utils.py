@@ -1,9 +1,13 @@
-import pyvista as pv
-from OrientedHypergraphs.objects import OrientedHypergraph
 import pickle
+
+import pyvista as pv
+
+from OrientedHypergraphs.objects import OrientedHypergraph
+
 #  import imageio
 
-def draw_S2_valued_OH(OH: OrientedHypergraph):
+
+def draw_S2_valued_OH(OH: OrientedHypergraph, file_name=None):
     """Draw set of S2-valued splines NB: not yet with hyperedges
     :param OH: Oriented hypergraph with S2-valued features.
     """
@@ -17,7 +21,9 @@ def draw_S2_valued_OH(OH: OrientedHypergraph):
         PP.add_mesh(pv.Sphere(radius=0.02, center=c), color="r")
 
     PP.show_axes()
-    PP.show()
+    PP.show(auto_close=False)
+    if file_name:
+        PP.save_graphic(file_name)
     PP.close()
 
 
@@ -30,7 +36,6 @@ def animate_S2_valued_OH(X_t, gif_name="test.gif"):
     frame_rate = len(X_t) // 3
     PP = pv.Plotter(notebook=False, off_screen=False)
     PP.open_gif(gif_name, fps=frame_rate)
-
 
     sphere = pv.Sphere(1)
     PP.add_mesh(sphere, color="#F5FFFF", show_edges=True)
@@ -68,10 +73,10 @@ def animate_S2_valued_OH(X_t, gif_name="test.gif"):
 
 
 def pickle_load(file_name):
-    with open(file_name, 'rb') as in_file:
+    with open(file_name, "rb") as in_file:
         return pickle.load(in_file)
 
 
 def pickle_dump(data, file_name):
-    with open(file_name, 'wb') as in_file:
+    with open(file_name, "wb") as in_file:
         return pickle.dump(data, in_file)
