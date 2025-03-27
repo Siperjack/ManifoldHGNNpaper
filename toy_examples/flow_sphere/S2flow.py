@@ -5,6 +5,7 @@ import pickle
 
 import jax
 import jax.numpy as jnp
+import numpy as np
 import pyvista as pv
 from morphomatics.manifold import Sphere
 
@@ -27,13 +28,20 @@ from toy_examples.flow_sphere.example_HGs import (
     # tetrahedron,
 )
 
-pv.OFF_SCREEN = True  # If not running in a container, set to False
+pv.OFF_SCREEN = True  # If not running in a container, set to False for interactive visualization
 jax.numpy.set_printoptions(precision=2)
 
+np.random.seed(42)
+jax.random.PRNGKey(42)
+
 # num_node, num_edge = 5, 4
-num_node, num_edge = 15, 10
+# num_node, num_edge = 15, 10
+# num_node, num_edge = 12, 12
+
 # num_node, num_edge = 10, 15
 # num_node, num_edge = 10, 30
+# num_node, num_edge = 20, 8
+num_node, num_edge = 20, 20
 
 
 M = Sphere(point_shape=(3,))
@@ -42,13 +50,23 @@ M = Sphere(point_shape=(3,))
 # OH = jraph_to_OH(rectangle(homogeneous_edge_weights=True))
 # OH = jraph_to_OH(irregular_graph(homogeneous_edge_weights=True))
 # OH = OH_rectangle(homogeneous_edge_weights=True)
+
+
+SameOct = True
+# Experiments only have true on one of the following, more than one interact according to function.
+Forward = False
+Backward = False
+Sym = True
+
+print(f"Settings: Forward: {Forward}, Backward: {Backward}, Sym: {Sym}, SameOct: {SameOct}")
+
 OH = random_S2_OH(
     num_node,
     num_edge,
-    same_oct=True,
-    forward=False,
-    backward=False,
-    sym=True,
+    same_oct=SameOct,
+    forward=Forward,
+    backward=Backward,
+    sym=Sym,
     min_tot_edge_degree=2,
     naive_normalize_deg=False,
 )
@@ -62,6 +80,8 @@ DG = clique_expand(OH)
 # OH_obj = OH
 OH = OH.OHGraphTupleReduced
 DG = DG.OHGraphTupleReduced
+
+# draw_S2_valued_OH(OH, file_name="./visualizations/OHinitialTest.pdf")
 
 OH_F, OH_P = OH, OH
 X_t = [OH.X]
@@ -112,7 +132,7 @@ def laplace_print(laplace_eval, laplace_str):
     print(f"max norm -> {jnp.sqrt((laplace_eval**2).max())} \n")
 
 
-max_iter = 1000
+max_iter = 10000
 for i in range(max_iter):
 
     OH_F, lapF = update_laplace_flow(
@@ -135,9 +155,9 @@ for i in range(max_iter):
         X_click_t.append(DG.X)
 
     if (
-        jnp.sqrt((lapF**2).max()) < 1e-4
-        and jnp.sqrt((lapP**2).max()) < 1e-4
-        and jnp.sqrt((lapg**2).max()) < 1e-4
+        jnp.sqrt((lapF**2).max()) < 1e-5
+        and jnp.sqrt((lapP**2).max()) < 1e-5
+        and jnp.sqrt((lapg**2).max()) < 1e-5
     ):
         print(f"All laplacians converged at {i} iterations")
         break
@@ -154,13 +174,27 @@ print(f"S2 timeseries saved as {file_name}")
 # animate_S2_valued_OH(X_click_t, gif_name="./gifs/Flow_C.gif")
 
 print("Drawing graphs")
-draw_S2_valued_OH(OH, file_name="./visualizations/OHinitial.pdf")
-draw_S2_valued_OH(OH_F, file_name="./visualizations/OHfinalF.pdf")
-draw_S2_valued_OH(OH_P, file_name="./visualizations/OHfinalP.pdf")
-draw_S2_valued_OH(DG, file_name="./visualizations/OHfinalg.pdf")
+
+naming_suffix = "_N" + str(num_node) + "M" + str(num_edge)
+
+draw_S2_valued_OH(OH, file_name=f"./visualizations/OHinitial{naming_suffix}.pdf")
+
+if Forward:
+    naming_suffix += "_forward"
+if Backward:
+    naming_suffix += "_backward"
+if Sym:
+    naming_suffix += "_sym"
+if not SameOct:
+    naming_suffix += "_whole_Sphere"
+
+draw_S2_valued_OH(OH_F, file_name=f"./visualizations/OHfinalF{naming_suffix}.pdf")
+draw_S2_valued_OH(OH_P, file_name=f"./visualizations/OHfinalP{naming_suffix}.pdf")
+draw_S2_valued_OH(DG, file_name=f"./visualizations/OHfinalg{naming_suffix}.pdf")
+
 laplace_print(FLaplace(OH_F, M, edge_normalize=True, deg_normalize=True), "F")
 laplace_print(PLaplace(OH_P, M, edge_normalize=True, deg_normalize=True), "P")
-laplace_print(PLaplace(DG, M, edge_normalize=True, deg_normalize=True), "g")  # g is the Laplacian of the clique expansion and PLaplace=FLaplace
+laplace_print(PLaplace(DG, M, edge_normalize=True, deg_normalize=True), "g")  # g is the Laplacian of the all-to-all expansion and PLaplace=FLaplace
 
 if __name__ == "__main__":
     pass

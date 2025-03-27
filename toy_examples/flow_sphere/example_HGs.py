@@ -224,9 +224,18 @@ def random_feature(n_node, gaussian=False, sd=1):
         random_R3 = np.random.normal(
             loc=jnp.ones((n_node, 3)), size=(n_node, 3), scale=sd
         )
+        random_S2 = random_R3 / np.linalg.norm(random_R3, axis=1).reshape(n_node, 1)
     else:
-        random_R3 = np.random.uniform(low=-1, high=1, size=(n_node, 3))
-    return random_R3 / np.linalg.norm(random_R3, axis=1).reshape(n_node, 1)
+        # Not properly uniform on the sphere as more probability mass is around the midlle of octants
+        # random_R3 = np.random.uniform(low=-1, high=1, size=(n_node, 3))
+        theta = np.random.uniform(low=-np.pi, high=np.pi, size=(n_node, 1))
+        phi = np.random.uniform(low=-np.pi/2, high=np.pi/2, size=(n_node, 1))
+
+        x = np.sin(theta) * np.cos(phi)
+        y = np.sin(theta) * np.sin(phi)
+        z = np.cos(theta)
+        random_S2 = np.column_stack((x, y, z))
+    return random_S2
 
 
 def random_S2_OH(
@@ -259,7 +268,7 @@ def random_S2_OH(
     random_H = generate_random_signed_incidence(
         N, M, sym=sym, min_tot_edge_degree=min_tot_edge_degree
     )
-    if forward:
+    if forward or backward:
         if sym:
             e2v, _ = H_to_e2v(np.abs(random_H))
             e2v_in, e2v_out = orient_hypergraph_one_to_all(e2v)
